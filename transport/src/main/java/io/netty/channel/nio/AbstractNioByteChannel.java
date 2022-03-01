@@ -165,7 +165,7 @@ public abstract class AbstractNioByteChannel extends AbstractNioChannel {
                 // Directly return here so incompleteWrite(...) is not called.
                 return;
             }
-
+            // 遍历buffer队列，过滤ByteBuf
             if (msg instanceof ByteBuf) {
                 ByteBuf buf = (ByteBuf) msg;
                 int readableBytes = buf.readableBytes();

@@ -273,9 +273,12 @@ public abstract class Recycler<T> {
             assert space >= 0;
             for (;;) {
                 int available = availableSharedCapacity.get();
+                // availableSharedCapacity表示最多可以让其他线程缓存当前线程创建的对象的个数
+                // 判断剩余容量是否足够创建一个Link所需的容量，默认一个Link容量为16
                 if (available < space) {
                     return false;
                 }
+                // 如果可以将availableSharedCapacity减16
                 if (availableSharedCapacity.compareAndSet(available, available - space)) {
                     return true;
                 }
@@ -288,12 +291,15 @@ public abstract class Recycler<T> {
         }
 
         void add(DefaultHandle<?> handle) {
+            // WeakOrderQueue的id
             handle.lastRecycledId = id;
 
             Link tail = this.tail;
             int writeIndex;
+            // 判断Link是否被写满了，如果被写满了， 尝试重新创建一个Link
             if ((writeIndex = tail.get()) == LINK_CAPACITY) {
                 if (!reserveSpace(availableSharedCapacity, LINK_CAPACITY)) {
+                    // 已达到最多允许其他线程缓存某线程创建对象的个数
                     // Drop it.
                     return;
                 }
@@ -338,8 +344,11 @@ public abstract class Recycler<T> {
             final int dstSize = dst.size;
             final int expectedCapacity = dstSize + srcSize;
 
+            // 如果Stack的elements长度不够回收，则进行扩容
             if (expectedCapacity > dst.elements.length) {
+                // actualCapacity扩容后elements的长度
                 final int actualCapacity = dst.increaseCapacity(expectedCapacity);
+                // actualCapacity - dstSize 扩容后还可以支持的回收个数
                 srcEnd = min(srcStart + actualCapacity - dstSize, srcEnd);
             }
 
@@ -408,7 +417,9 @@ public abstract class Recycler<T> {
         // still recycling all items.
         final Recycler<T> parent;
         final Thread thread;
+        // 当前线程创建的对象，最多可以在其他线程里缓存的个数
         final AtomicInteger availableSharedCapacity;
+        // 表示当前线程最多可以帮助几个其他线程回收对象
         final int maxDelayedQueues;
 
         private final int maxCapacity;
@@ -449,6 +460,7 @@ public abstract class Recycler<T> {
         DefaultHandle<T> pop() {
             int size = this.size;
             if (size == 0) {
+                // 如果当前线程没有可复用的回收对象，则从其他线程帮忙回收本线程创建的对象中获取
                 if (!scavenge()) {
                     return null;
                 }
@@ -538,6 +550,7 @@ public abstract class Recycler<T> {
         }
 
         private void pushNow(DefaultHandle<?> item) {
+            // 如果没有回收过，默认recycleId和lastRecycledId都为0
             if ((item.recycleId | item.lastRecycledId) != 0) {
                 throw new IllegalStateException("recycled already");
             }
@@ -548,6 +561,7 @@ public abstract class Recycler<T> {
                 // Hit the maximum capacity or should drop - drop the possibly youngest object.
                 return;
             }
+            // 扩容，扩大为原来的2倍
             if (size == elements.length) {
                 elements = Arrays.copyOf(elements, min(size << 1, maxCapacity));
             }
@@ -563,6 +577,7 @@ public abstract class Recycler<T> {
             Map<Stack<?>, WeakOrderQueue> delayedRecycled = DELAYED_RECYCLED.get();
             WeakOrderQueue queue = delayedRecycled.get(this);
             if (queue == null) {
+                // maxDelayedQueues表示当前线程最多可以帮助几个其他线程回收对象
                 if (delayedRecycled.size() >= maxDelayedQueues) {
                     // Add a dummy queue so we know we should drop the object
                     delayedRecycled.put(this, WeakOrderQueue.DUMMY);
@@ -583,7 +598,9 @@ public abstract class Recycler<T> {
         }
 
         boolean dropHandle(DefaultHandle<?> handle) {
+            // 判断对象是否被回收过
             if (!handle.hasBeenRecycled) {
+                // 对象池如果是第一次回收这个对象会被回收，之后没被回收过的对象每隔8个回收一个
                 if ((++handleRecycleCount & ratioMask) != 0) {
                     // Drop the object.
                     return true;
