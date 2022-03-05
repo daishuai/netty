@@ -165,11 +165,12 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
         synchronized (childAttrs) {
             currentChildAttrs = childAttrs.entrySet().toArray(newAttrArray(childAttrs.size()));
         }
-
+        // 配置服务端的Pipeline
         p.addLast(new ChannelInitializer<Channel>() {
             @Override
             public void initChannel(Channel ch) throws Exception {
                 final ChannelPipeline pipeline = ch.pipeline();
+                // ServerBootstrap.handler()设置的Handler
                 ChannelHandler handler = config.handler();
                 if (handler != null) {
                     pipeline.addLast(handler);
@@ -182,6 +183,7 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
                 ch.eventLoop().execute(new Runnable() {
                     @Override
                     public void run() {
+                        // 添加链接器
                         pipeline.addLast(new ServerBootstrapAcceptor(
                                 currentChildGroup, currentChildHandler, currentChildOptions, currentChildAttrs));
                     }
@@ -192,6 +194,7 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
 
     @Override
     public ServerBootstrap validate() {
+        // 校验group和channelFactory是否设置了
         super.validate();
         if (childHandler == null) {
             throw new IllegalStateException("childHandler not set");

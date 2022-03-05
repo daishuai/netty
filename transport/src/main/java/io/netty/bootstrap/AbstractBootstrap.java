@@ -316,7 +316,9 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
     final ChannelFuture initAndRegister() {
         Channel channel = null;
         try {
+            // ServerBootstrap.channel()会创建一个ReflectiveChannelFactory,反射创建Channel
             channel = channelFactory.newChannel();
+            // 初始化服务端Channel
             init(channel);
         } catch (Throwable t) {
             if (channel != null) {
@@ -326,7 +328,7 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
             // as the Channel is not registered yet we need to force the usage of the GlobalEventExecutor
             return new DefaultChannelPromise(channel, GlobalEventExecutor.INSTANCE).setFailure(t);
         }
-
+        // ServerBootstrap.group()设置的EventLoopGroup
         ChannelFuture regFuture = config().group().register(channel);
         if (regFuture.cause() != null) {
             if (channel.isRegistered()) {
