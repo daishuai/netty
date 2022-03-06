@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
  */
 public abstract class AbstractScheduledEventExecutor extends AbstractEventExecutor {
 
+    // Netty里面定时任务队列是按照延迟时间从小到大进行排序
     Queue<ScheduledFutureTask<?>> scheduledTaskQueue;
 
     protected AbstractScheduledEventExecutor() {
@@ -114,6 +115,7 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
     }
 
     final ScheduledFutureTask<?> peekScheduledTask() {
+        // Netty里面定时任务队列是按照延迟时间从小到大进行排序
         Queue<ScheduledFutureTask<?>> scheduledTaskQueue = this.scheduledTaskQueue;
         if (scheduledTaskQueue == null) {
             return null;

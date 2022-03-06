@@ -473,6 +473,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
                 register0(promise);
             } else {
                 try {
+                    // 如果当前线程不是和EventLoop绑定的现场，将注册包装成任务放入队列
                     eventLoop.execute(new Runnable() {
                         @Override
                         public void run() {

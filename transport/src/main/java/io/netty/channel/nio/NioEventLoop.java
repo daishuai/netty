@@ -335,7 +335,10 @@ public final class NioEventLoop extends SingleThreadEventLoop {
             logger.warn("Failed to create a new Selector.", e);
             return;
         }
-
+        // 1、拿到有效的key
+        // 2、取消该key在旧的Selector上的事件注册
+        // 3、将该key对应的Channel注册到新的Selector上
+        // 4、重新绑定Channel和新的key的关系
         // Register all channels to the new Selector.
         int nChannels = 0;
         for (;;) {
@@ -397,6 +400,8 @@ public final class NioEventLoop extends SingleThreadEventLoop {
                     case SelectStrategy.CONTINUE:
                         continue;
                     case SelectStrategy.SELECT:
+                        // 首先轮询注册到Reactor线程对应的Selector上的所有Channel的IO事件
+                        // wakeUp表示是否应该唤醒正在阻塞的select操作
                         select(wakenUp.getAndSet(false));
 
                         // 'wakenUp.compareAndSet(false, true)' is always evaluated
@@ -439,9 +444,11 @@ public final class NioEventLoop extends SingleThreadEventLoop {
                 final int ioRatio = this.ioRatio;
                 if (ioRatio == 100) {
                     try {
+                        // 处理产生网络IO事件的Channel
                         processSelectedKeys();
                     } finally {
                         // Ensure we always run tasks.
+                        // 处理任务队列
                         runAllTasks();
                     }
                 } else {
@@ -737,6 +744,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
             long currentTimeNanos = System.nanoTime();
             long selectDeadLineNanos = currentTimeNanos + delayNanos(currentTimeNanos);
             for (;;) {
+                // 定时任务截止时间快到了(<=0.5ms)，中断本次轮询
                 long timeoutMillis = (selectDeadLineNanos - currentTimeNanos + 500000L) / 1000000L;
                 if (timeoutMillis <= 0) {
                     if (selectCnt == 0) {
@@ -750,12 +758,14 @@ public final class NioEventLoop extends SingleThreadEventLoop {
                 // Selector#wakeup. So we need to check task queue again before executing select operation.
                 // If we don't, the task might be pended until select operation was timed out.
                 // It might be pended until idle timeout if IdleStateHandler existed in pipeline.
+                // 轮询过程中发现有任务加入，中断本次轮询
                 if (hasTasks() && wakenUp.compareAndSet(false, true)) {
                     selector.selectNow();
                     selectCnt = 1;
                     break;
                 }
-
+                // 阻塞式select操作，超时时间为第一个任务的到期时间
+                // 外部线程调用execute方法添加任务是会唤醒，该阻塞就会释放
                 int selectedKeys = selector.select(timeoutMillis);
                 selectCnt ++;
 
@@ -781,6 +791,10 @@ public final class NioEventLoop extends SingleThreadEventLoop {
                     break;
                 }
 
+                // 避免jdk空轮询bug
+                // 通过判断阻塞时间是否大于等于设置的超时时间，
+                // 如果小于可能触发了jdk的空轮询bug
+                // 当空轮询次数超过阈值（默认512），就开始重建Selector
                 long time = System.nanoTime();
                 if (time - TimeUnit.MILLISECONDS.toNanos(timeoutMillis) >= currentTimeNanos) {
                     // timeoutMillis elapsed without anything selected.
@@ -792,7 +806,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
                     logger.warn(
                             "Selector.select() returned prematurely {} times in a row; rebuilding Selector {}.",
                             selectCnt, selector);
-
+                    // 重建Selector
                     rebuildSelector();
                     selector = this.selector;
 

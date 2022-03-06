@@ -870,6 +870,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
                 boolean success = false;
                 updateLastExecutionTime();
                 try {
+                    // NioEventLoop继承SingleThreadEventExecutor
                     SingleThreadEventExecutor.this.run();
                     success = true;
                 } catch (Throwable t) {
