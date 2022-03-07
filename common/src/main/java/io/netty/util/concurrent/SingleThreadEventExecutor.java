@@ -84,6 +84,10 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
     private volatile Thread thread;
     @SuppressWarnings("unused")
     private volatile ThreadProperties threadProperties;
+    /**
+     * 创建NioEventLoop时传递 {@link MultithreadEventExecutorGroup#MultithreadEventExecutorGroup(int, Executor, EventExecutorChooserFactory, Object...)}
+     * 默认{@link ThreadPerTaskExecutor}
+     */
     private final Executor executor;
     private volatile boolean interrupted;
 
@@ -847,6 +851,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
 
     private void doStartThread() {
         assert thread == null;
+
         executor.execute(new Runnable() {
             @Override
             public void run() {
