@@ -15,12 +15,7 @@
  */
 package io.netty.channel.nio;
 
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelConfig;
-import io.netty.channel.ChannelOutboundBuffer;
-import io.netty.channel.ChannelPipeline;
-import io.netty.channel.RecvByteBufAllocator;
-import io.netty.channel.ServerChannel;
+import io.netty.channel.*;
 
 import java.io.IOException;
 import java.net.PortUnreachableException;
@@ -90,6 +85,15 @@ public abstract class AbstractNioMessageChannel extends AbstractNioChannel {
                 int size = readBuf.size();
                 for (int i = 0; i < size; i ++) {
                     readPending = false;
+                    /**
+                     * 当前Pipeline {@link io.netty.channel.DefaultChannelPipeline.HeadContext#channelRead(ChannelHandlerContext, Object)}
+                     * -> {@link io.netty.bootstrap.ServerBootstrap.ServerBootstrapAcceptor#channelRead(ChannelHandlerContext, Object)}
+                     *      - 设置childHandler
+                     *      - 设置childOptions
+                     *      - 设置childAttr
+                     *      - register
+                     * -> {@link io.netty.channel.DefaultChannelPipeline.TailContext#channelRead(ChannelHandlerContext, Object)}
+                     */
                     pipeline.fireChannelRead(readBuf.get(i));
                 }
                 readBuf.clear();
