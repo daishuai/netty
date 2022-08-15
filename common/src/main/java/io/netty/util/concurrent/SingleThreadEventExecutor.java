@@ -749,6 +749,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         if (inEventLoop) {
             addTask(task);
         } else {
+            // NioEventLoop启动
             startThread();
             addTask(task);
             if (isShutdown() && removeTask(task)) {
