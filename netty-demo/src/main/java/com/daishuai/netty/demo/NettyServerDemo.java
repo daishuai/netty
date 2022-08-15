@@ -13,10 +13,9 @@ import io.netty.util.AttributeKey;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * @ClassName NettyServerDemo
- * @Author daishuai
- * @Date 2022/3/3 20:52
- * @Version 1.0
+ * @author daishuai
+ * @createTime 2022-03-03 20:52:00
+ * @version 1.0
  */
 @Slf4j
 public class NettyServerDemo {
@@ -26,7 +25,7 @@ public class NettyServerDemo {
         /**
          * 1、创建服务端Channel
          * bind()[用户代码入口]
-         * -> initAndRegister()[初始化斌注册]
+         * -> initAndRegister()[初始化并注册]
          * -> newChannel()[创建服务端Channel]
          * 反射创建服务端Channel
          * newSocket()[通过jdk来创建底层jdk Channel]
@@ -47,7 +46,7 @@ public class NettyServerDemo {
          *          -> doRegister()[调用jdk底层注册]
          *          -> invokeHandlerAddedIfNeeded()
          *          -> fireChannelRegistered()[传播事件]
-         *
+         * <p>
          * 4、NioEventLoop创建
          * new NioEventLoopGroup()[线程组，默认2*cpu]
          *      -> new ThreadPerTaskExecutor()[线程创建器]
@@ -216,21 +215,21 @@ public class NettyServerDemo {
          *  添加刷新标志并设置写状态
          *  遍历buffer队列，过滤ByteBuf
          *  调用jdk底层api进行自旋写
-         *
+         * <p>
          * 30、Netty两大性能优化工具类
          *  FastThreadLocal
          *  Recycler
-         *
+         * <p>
          * 31、从Recycler获取对象
          *  获取当前线程的Stack
          *  从Stack里面弹出对象
          *  创建对象并绑定到Stack
-         *
+         * <p>
          * 32、异线程回收对象
          *  获取WeakOrderQueue
          *  创建WeakOrderQueue
          *  将对象追加到WeakOrderQueue
-         *
+         * <p>
          * 33、从Recycler获取对象
          *  获取当前线程的Stack
          *  从Stack里面弹出对象
